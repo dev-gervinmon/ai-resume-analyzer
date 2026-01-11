@@ -1,87 +1,100 @@
-# Welcome to React Router!
+# Resumind — AI Resume Analyzer
 
-A modern, production-ready template for building full-stack React applications using React Router.
+Resumind is a single-page web app that lets you upload a resume PDF, provide a target job title + description, and receive structured AI feedback with an overall score, ATS score, and category-by-category improvement tips.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+It uses Puter (via `https://js.puter.com/v2/`) for authentication, file storage, a simple KV database, and AI chat.
 
-## Features
+## What the app does
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- **Sign in** with Puter to access your personal workspace.
+- **Upload a resume PDF** (max ~20MB).
+- **Convert the first page to an image** (for preview) using `pdfjs-dist`.
+- **Store artifacts in Puter**:
+  - PDF file in Puter FS
+  - Preview image (PNG) in Puter FS
+  - Resume metadata + AI feedback JSON in Puter KV (`resume:<uuid>`)
+- **Show a dashboard** of past uploads with the overall score.
+- **Show a detailed review page** with:
+  - Overall score
+  - ATS score + quick tips
+  - Detailed tips for Tone & Style, Content, Structure, Skills
+- **Optional utility**: a `/wipe` route to delete uploaded files and flush KV data (useful during development).
 
-## Getting Started
+## Routes
 
-### Installation
+- `/` — Dashboard (lists analyzed resumes stored in KV)
+- `/auth` — Puter login/logout
+- `/upload` — Resume upload + analysis form
+- `/resume/:id` — Detailed review for a specific upload
+- `/wipe` — Dev utility to clear Puter files + KV
 
-Install the dependencies:
+## Tech stack
+
+- React 19 + React Router v7 (configured as SPA: `ssr: false`)
+- Vite 7
+- Tailwind CSS v4
+- Zustand (client-side store)
+- `pdfjs-dist` for PDF → image conversion (loads worker from `public/pdf.worker.min.mjs`)
+- Puter.js for auth, storage, KV, and AI
+
+## Local development
+
+Prereqs:
+
+- Node.js 20+ (Dockerfile uses Node 20)
+- A modern browser
+- Internet access (loads Puter.js from Puter CDN)
+
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-### Development
-
-Start the development server with HMR:
+Start dev server:
 
 ```bash
 npm run dev
 ```
 
-Your application will be available at `http://localhost:5173`.
+Open `http://localhost:5173`.
 
-## Building for Production
+Notes:
 
-Create a production build:
+- The app redirects to `/auth` when you’re not signed in.
+- Resumes and feedback are stored under your Puter account.
+
+## Production build
 
 ```bash
 npm run build
+npm run start
 ```
 
-## Deployment
+`npm run start` serves the built app (typically on port `3000`).
 
-### Docker Deployment
-
-To build and run using Docker:
+## Docker
 
 ```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
+docker build -t ai-resume-analyzer .
+docker run -p 3000:3000 ai-resume-analyzer
 ```
 
-The containerized application can be deployed to any platform that supports Docker, including:
+## Data model
 
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
+- KV key pattern: `resume:<uuid>`
+- Value: JSON containing:
+  - `resumePath` (Puter FS path to PDF)
+  - `imagePath` (Puter FS path to preview PNG)
+  - `companyName`, `jobTitle`, `jobDescription`
+  - `feedback` (parsed JSON from the AI response)
 
-### DIY Deployment
+## Privacy / safety notes
 
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
+- Uploaded files are stored in Puter FS.
+- The analysis is performed via Puter AI chat (configured to use the `claude-sonnet-4` model in code).
+- Avoid uploading sensitive information unless you’re comfortable storing it in your Puter account.
 
-Make sure to deploy the output of `npm run build`
+## Live Link
 
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+- https://puter.com/app/ai-resume-analyzer-124
